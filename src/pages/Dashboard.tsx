@@ -1,3 +1,4 @@
+import { useLocation } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import CameraFeed from "@/components/CameraFeed";
@@ -17,6 +18,8 @@ const initialCameras: CameraFeedData[] = [
 ];
 
 const Dashboard = () => {
+  const location = useLocation();
+
   const [cameras, setCameras] = useState<CameraFeedData[]>(initialCameras);
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -25,24 +28,51 @@ const Dashboard = () => {
     camerasActive: 5,
     resolvedIncidents: 0,
   });
+
+  // 🔥 NEW: camera stream state
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isAlert = alerts.length >= 2;
+
+  // ✅ START CAMERA WHEN USER COMES FROM CONNECT PAGE
+  useEffect(() => {
+    const startCamera = async () => {
+      if (location.state?.cameraOn) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          setCameraStream(stream);
+        } catch (err) {
+          console.error("Camera access denied:", err);
+        }
+      }
+    };
+
+    startCamera();
+  }, [location.state]);
 
   const triggerAlert = useCallback(() => {
     const newAlert = generateMockAlert();
     setAlerts((prev) => [...prev, newAlert]);
+
     setAnalytics((prev) => ({
       ...prev,
       totalAlertsToday: prev.totalAlertsToday + 1,
       suspiciousActivities: prev.suspiciousActivities + 1,
     }));
 
-    // Mark a random camera as suspicious
+    // Mark random camera suspicious
     setCameras((prev) => {
       const activeCams = prev.filter((c) => c.status === "active" && !c.suspiciousActivity);
       if (activeCams.length === 0) return prev;
+
       const target = activeCams[Math.floor(Math.random() * activeCams.length)];
-      return prev.map((c) => (c.id === target.id ? { ...c, suspiciousActivity: true } : c));
+
+      return prev.map((c) =>
+        c.id === target.id ? { ...c, suspiciousActivity: true } : c
+      );
     });
   }, []);
 
@@ -50,32 +80,40 @@ const Dashboard = () => {
     resetAlerts();
     setAlerts([]);
     setCameras(initialCameras);
-    setAnalytics((prev) => ({ ...prev, suspiciousActivities: 0 }));
+
+    setAnalytics((prev) => ({
+      ...prev,
+      suspiciousActivities: 0,
+    }));
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
   }, []);
 
-  // Play alarm when alert count >= 2
+  // 🔊 Alarm logic
   useEffect(() => {
     if (alerts.length >= 2 && audioRef.current) {
       audioRef.current.play().catch(() => {});
     }
   }, [alerts.length]);
 
-  // Demo: auto-trigger alerts every 8 seconds (up to 4)
+  // ⏱ Auto alerts demo
   useEffect(() => {
     if (alerts.length >= 4) return;
+
     const timer = setTimeout(() => {
       triggerAlert();
     }, 8000);
+
     return () => clearTimeout(timer);
   }, [alerts.length, triggerAlert]);
 
   return (
     <div className={`min-h-screen flex flex-col transition-all duration-500 ${isAlert ? "ring-2 ring-danger/30 ring-inset" : ""}`}>
-      {/* Alarm audio - using a data URI beep since we can't load external files */}
+      
+      {/* 🔊 Alarm audio */}
       <audio ref={audioRef} loop preload="auto">
         <source src="data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==" type="audio/wav" />
       </audio>
@@ -83,7 +121,8 @@ const Dashboard = () => {
       <Navbar isAlert={isAlert} alertCount={alerts.length} />
 
       <main className="flex-1 p-4 space-y-4">
-        {/* Alert banner */}
+
+        {/* 🚨 Alert banner */}
         {isAlert && (
           <div className="alert-pulse rounded border border-danger bg-danger/10 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -96,19 +135,24 @@ const Dashboard = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Camera feed - 8 cols */}
+
+          {/* 🎥 Camera Feed */}
           <div className="lg:col-span-8">
-            <CameraFeed cameras={cameras} isAlert={isAlert} />
+            <CameraFeed 
+              cameras={cameras} 
+              isAlert={isAlert} 
+              cameraStream={cameraStream}   // 🔥 PASS STREAM HERE
+            />
           </div>
 
-          {/* Sidebar - 4 cols */}
+          {/* 📊 Sidebar */}
           <div className="lg:col-span-4 space-y-4">
             <Analytics data={analytics} />
             <Alerts alerts={alerts} isAlert={isAlert} />
           </div>
         </div>
 
-        {/* Controls */}
+        {/* 🎮 Controls */}
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={triggerAlert}
@@ -116,6 +160,7 @@ const Dashboard = () => {
           >
             SIMULATE ALERT
           </button>
+
           <button
             onClick={resetSystem}
             className="text-xs font-mono px-4 py-2 rounded border border-border bg-secondary text-muted-foreground hover:text-foreground transition-colors"

@@ -5,13 +5,13 @@ const Connect = () => {
   const navigate = useNavigate();
   const [isConnecting, setIsConnecting] = useState(false);
 
-  useEffect(() => {
-    if (isConnecting) {
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 3000);
-    }
-  }, [isConnecting]);
+useEffect(() => {
+  if (isConnecting) {
+    setTimeout(() => {
+      navigate("/dashboard", { state: { cameraOn: true } });
+    }, 3000);
+  }
+}, [isConnecting]);
 
   return (
     <div
