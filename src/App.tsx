@@ -3,37 +3,47 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CameraProvider } from "@/contexts/CameraContext";
 
 import Splash from "./pages/Splash";
 import Connect from "./pages/Connect";
-import Index from "./pages/Index"; // dashboard
+import Dashboard from "./pages/Dashboard";
+import Cameras from "./pages/Cameras";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+    <CameraProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
         <Routes>
 
-          {/* 1️⃣ Splash / Logo Page */}
+          {/* Splash */}
           <Route path="/" element={<Splash />} />
 
-          {/* 2️⃣ Connect Page */}
+          {/* Connect */}
           <Route path="/connect" element={<Connect />} />
 
-          {/* 3️⃣ Dashboard */}
-          <Route path="/dashboard" element={<Index />} />
+          {/* Dashboard */}
+          <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* Catch-all */}
+          {/* NEW PAGES */}
+          <Route path="/cameras" element={<Cameras />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Settings />} />
+
           <Route path="*" element={<NotFound />} />
 
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
+      </TooltipProvider>
+    </CameraProvider>
   </QueryClientProvider>
 );
 

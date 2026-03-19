@@ -1,4 +1,5 @@
 import { AlertTriangle, Clock, Camera } from "lucide-react";
+
 import type { AlertData } from "@/api/api";
 
 interface AlertsProps {

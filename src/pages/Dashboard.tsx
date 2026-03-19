@@ -5,6 +5,7 @@ import CameraFeed from "@/components/CameraFeed";
 import Alerts from "@/components/Alerts";
 import Analytics from "@/components/Analytics";
 import { generateMockAlert, resetAlerts } from "@/api/api";
+import { useCamera } from "@/contexts/CameraContext";
 import type { AlertData, CameraFeedData, AnalyticsData } from "@/api/api";
 import { ShieldAlert } from "lucide-react";
 
@@ -19,6 +20,7 @@ const initialCameras: CameraFeedData[] = [
 
 const Dashboard = () => {
   const location = useLocation();
+  const { cameraStream, startCamera } = useCamera();
 
   const [cameras, setCameras] = useState<CameraFeedData[]>(initialCameras);
   const [alerts, setAlerts] = useState<AlertData[]>([]);
@@ -29,29 +31,15 @@ const Dashboard = () => {
     resolvedIncidents: 0,
   });
 
-  // 🔥 NEW: camera stream state
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isAlert = alerts.length >= 2;
 
-  // ✅ START CAMERA WHEN USER COMES FROM CONNECT PAGE
+  // ✅ START CAMERA WHEN USER COMES FROM CONNECT PAGE OR RETURNS TO DASHBOARD
   useEffect(() => {
-    const startCamera = async () => {
-      if (location.state?.cameraOn) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-          });
-          setCameraStream(stream);
-        } catch (err) {
-          console.error("Camera access denied:", err);
-        }
-      }
-    };
-
-    startCamera();
-  }, [location.state]);
+    if (location.state?.cameraOn) {
+      startCamera();
+    }
+  }, [location.state?.cameraOn, startCamera]);
 
   const triggerAlert = useCallback(() => {
     const newAlert = generateMockAlert();
